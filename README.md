@@ -11,8 +11,8 @@
 ## Quick Submission Links
 
 * **GitHub Repository:** [https://github.com/Princeyyyy/savannah-clinic](https://github.com/Princeyyyy/savannah-clinic)
-* **Interactive Live Demo:** `https://savannah-clinic-api.onrender.com/`
-* **Interactive OpenAPI Swagger Docs:** `https://savannah-clinic-api.onrender.com/docs`
+* **Interactive Live Demo:** [https://savannah-clinic-api-rf3r.onrender.com](https://savannah-clinic-api-rf3r.onrender.com)
+* **Interactive OpenAPI Swagger Docs:** [https://savannah-clinic-api-rf3r.onrender.com/docs](https://savannah-clinic-api-rf3r.onrender.com/docs)
 * **Section 4 AI Reflection:** [REFLECTION.md](file:///Users/prince/Downloads/Savannah%20Interview%20Question/REFLECTION.md)
 
 ---
@@ -242,8 +242,8 @@ pytest -v
 
 ### Deployment Target
 - **Cloud Provider:** [Render](https://render.com) (Native Python Web Service + Managed PostgreSQL).
-- **Public URL:** `https://savannah-clinic-api.onrender.com`
-- **Healthcheck:** `GET https://savannah-clinic-api.onrender.com/health` returns `200 OK` with database status `connected`.
+- **Public URL:** [https://savannah-clinic-api-rf3r.onrender.com](https://savannah-clinic-api-rf3r.onrender.com)
+- **Healthcheck:** `GET https://savannah-clinic-api-rf3r.onrender.com/health` returns `200 OK` with database status `connected`.
 
 ### CI/CD Pipeline Architecture
 
