@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.models import Doctor
-from app.schemas.doctor import DoctorResponse, DoctorAvailabilityResponse
-from app.services.availability import get_doctor_available_slots
+from app.schemas.doctor import DoctorResponse, DoctorAvailabilityResponse, SlotDetail
+from app.services.availability import get_doctor_schedule_slots
 from app.core.config import settings
 
 router = APIRouter()
@@ -30,7 +30,11 @@ def get_availability(
 ):
     """
     Returns all available 30-minute slots for a doctor on a specified date.
-    Excludes past slots, lunch breaks, slots within 1 hour cutoff, and existing bookings.
+    Also returns the complete schedule of all slots with statuses:
+    - AVAILABLE (green)
+    - BOOKED (red)
+    - BREAK (amber)
+    - CUTOFF / PAST (slate)
     """
     doctor = db.query(Doctor).filter(Doctor.id == id, Doctor.is_active.is_(True)).first()
     if not doctor:
@@ -39,12 +43,17 @@ def get_availability(
             detail=f"Doctor with identifier '{id}' was not found."
         )
 
-    slots = get_doctor_available_slots(db=db, doctor_id=id, query_date=date_param)
-    
+    available_slots, all_slots_details = get_doctor_schedule_slots(
+        db=db,
+        doctor_id=id,
+        query_date=date_param
+    )
+
     return DoctorAvailabilityResponse(
         doctor_id=doctor.id,
         doctor_name=doctor.name,
         date=date_param.isoformat(),
         slot_duration_minutes=settings.SLOT_DURATION_MINUTES,
-        available_slots=[slot.isoformat() for slot in slots]
+        available_slots=[slot.isoformat() for slot in available_slots],
+        all_slots=[SlotDetail(**slot_dict) for slot_dict in all_slots_details]
     )

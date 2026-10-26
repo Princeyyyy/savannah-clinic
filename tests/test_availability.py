@@ -70,3 +70,35 @@ def test_booked_slot_removed_from_availability(client):
 
     assert slot_time not in available_slots
     assert len(available_slots) == 13
+
+
+def test_doctor_schedule_all_slots_statuses(client):
+    """Verify that all_slots categorizes booked slots as BOOKED and free slots as AVAILABLE."""
+    future_wednesday = get_next_weekday(date.today(), target_weekday=2)
+    slot_time = f"{future_wednesday.isoformat()}T10:00:00"
+
+    # Book 1 slot
+    client.post(
+        "/api/v1/appointments",
+        json={"doctor_id": 1, "patient_id": 1, "start_time": slot_time}
+    )
+
+    avail_res = client.get(f"/api/v1/doctors/1/availability?date={future_wednesday.isoformat()}")
+    data = avail_res.json()
+    all_slots = data["all_slots"]
+
+    # Locate the booked slot
+    booked_slot = next((s for s in all_slots if s["start_time"] == slot_time), None)
+    assert booked_slot is not None
+    assert booked_slot["status"] == "BOOKED"
+    assert booked_slot["patient_name"] == "John Kamau"
+
+    # Locate an open slot
+    open_slot = next((s for s in all_slots if s["start_time"] == f"{future_wednesday.isoformat()}T09:00:00"), None)
+    assert open_slot is not None
+    assert open_slot["status"] == "AVAILABLE"
+
+    # Locate lunch break slot
+    break_slot = next((s for s in all_slots if s["start_time"] == f"{future_wednesday.isoformat()}T13:00:00"), None)
+    assert break_slot is not None
+    assert break_slot["status"] == "BREAK"

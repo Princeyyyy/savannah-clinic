@@ -1,4 +1,3 @@
-import os
 import pytest
 from datetime import time
 from fastapi.testclient import TestClient
@@ -59,28 +58,22 @@ def seed_test_data(db):
 
 
 @pytest.fixture(scope="function")
-def db_session():
-    """Create a fresh database for each test function."""
+def client():
+    """Create a fresh database and provide isolated DB sessions per request."""
     Base.metadata.create_all(bind=test_engine)
-    db = TestingSessionLocal()
-    seed_test_data(db)
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=test_engine)
+    init_session = TestingSessionLocal()
+    seed_test_data(init_session)
+    init_session.close()
 
-
-@pytest.fixture(scope="function")
-def client(db_session):
-    """Override FastAPI dependency to use test database session."""
     def override_get_db():
+        db = TestingSessionLocal()
         try:
-            yield db_session
+            yield db
         finally:
-            pass
+            db.close()
 
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+    Base.metadata.drop_all(bind=test_engine)
