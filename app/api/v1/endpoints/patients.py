@@ -41,7 +41,7 @@ def create_patient(payload: PatientCreate, db: Session = Depends(get_db)):
 @router.get(
     "/{id}/appointments",
     response_model=List[AppointmentResponse],
-    summary="[Bonus] Get upcoming appointments for a patient sorted chronologically"
+    summary="Get upcoming appointments for a patient sorted chronologically"
 )
 def get_patient_upcoming_appointments(
     id: int,

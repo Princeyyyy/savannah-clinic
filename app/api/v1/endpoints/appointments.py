@@ -49,7 +49,7 @@ def create_appointment(
     Validations:
     - Within doctor's working hours & outside breaks
     - Not in the past
-    - Minimum 1 hour in advance (Bonus requirement)
+    - Minimum 1 hour in advance
     - Slot is not already taken
     - Aligned with 30-minute intervals
     """

@@ -11,9 +11,8 @@
 ## Quick Submission Links
 
 * **GitHub Repository:** [https://github.com/Princeyyyy/savannah-clinic](https://github.com/Princeyyyy/savannah-clinic)
-* **Live Deployed Application (Render):** `https://savannah-clinic-api.onrender.com` *(Replace with your live Render URL)*
+* **Interactive Live Demo:** `https://savannah-clinic-api.onrender.com/`
 * **Interactive OpenAPI Swagger Docs:** `https://savannah-clinic-api.onrender.com/docs`
-* **Live Interactive Web Dashboard:** `https://savannah-clinic-api.onrender.com/`
 * **Section 4 AI Reflection:** [REFLECTION.md](file:///Users/prince/Downloads/Savannah%20Interview%20Question/REFLECTION.md)
 
 ---
@@ -26,7 +25,7 @@
    - [Key Technical Decisions & Trade-Offs](#key-technical-decisions--trade-offs)
 2. [Section 2: API Specification & Architecture](#section-2-api-specification--architecture)
    - [Endpoints Summary](#endpoints-summary)
-   - [Bonus Features Implemented](#bonus-features-implemented)
+   - [Advance Scheduling & Patient Appointment Features](#advance-scheduling--patient-appointment-features)
    - [Project Directory Layout](#project-directory-layout)
 3. [How to Run Locally (Zero Docker Friction)](#how-to-run-locally-zero-docker-friction)
    - [Setup & Start](#setup--start)
@@ -138,9 +137,9 @@ The API adheres to strict REST conventions, returning standard HTTP status codes
 | `PATCH` | `/api/v1/appointments/{id}/cancel` | Cancel an appointment with a reason | `200 OK`, `400 Bad Request`, `404 Not Found` |
 | `PATCH` | `/api/v1/appointments/{id}/reschedule` | Move appointment to a new slot | `200 OK`, `400 Bad Request`, `409 Conflict` |
 | `GET` | `/api/v1/patients` | List clinic patients | `200 OK` |
-| `GET` | `/api/v1/patients/{id}/appointments` | **(Bonus)** Patient's upcoming appointments sorted | `200 OK`, `404 Not Found` |
+| `GET` | `/api/v1/patients/{id}/appointments` | Patient's upcoming appointments sorted chronologically | `200 OK`, `404 Not Found` |
 
-### Bonus Features Implemented
+### Advance Scheduling & Patient Appointment Features
 1. **Prevention of Bookings Within 1 Hour of Now:**
    Any booking attempt where `start_time < now() + 1 hour` is rejected with `HTTP 400 Bad Request` ("Bookings must be made at least 1 hour(s) in advance").
 2. **Patient Upcoming Appointments Endpoint:**
@@ -161,7 +160,7 @@ savannah-clinic/
 │   │       └── endpoints/
 │   │           ├── appointments.py # Booking, cancellation, rescheduling
 │   │           ├── doctors.py      # Doctor listing & availability
-│   │           └── patients.py     # Patient records & upcoming bookings (Bonus)
+│   │           └── patients.py     # Patient records & upcoming bookings
 │   ├── core/
 │   │   ├── config.py           # Pydantic Settings & environment variables
 │   │   └── exceptions.py       # Custom Domain exceptions & HTTP handlers
