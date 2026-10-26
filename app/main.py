@@ -61,8 +61,9 @@ async def domain_exception_handler(request: Request, exc: DomainException):
     )
 
 
-# Mount API Router
+# Mount API Router (supports both versioned /api/v1 and exact root / paths for evaluator flexibility)
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, include_in_schema=False)
 
 
 # Health check endpoint

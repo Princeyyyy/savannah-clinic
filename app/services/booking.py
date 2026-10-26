@@ -53,6 +53,14 @@ def validate_booking_time(
     if start_time < current_time:
         raise InvalidBookingException("Cannot book an appointment slot in the past.")
 
+    # Check advance booking cutoff if configured
+    if settings.MIN_ADVANCE_BOOKING_HOURS > 0:
+        advance_cutoff = current_time + timedelta(hours=settings.MIN_ADVANCE_BOOKING_HOURS)
+        if start_time < advance_cutoff:
+            raise InvalidBookingException(
+                f"Bookings must be made at least {settings.MIN_ADVANCE_BOOKING_HOURS} hour(s) in advance."
+            )
+
     # Check doctor working hours
     slot_date = start_time.date()
     slot_time = start_time.time()

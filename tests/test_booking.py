@@ -113,3 +113,21 @@ def test_book_appointment_invalid_doctor_or_patient(client):
         json={"doctor_id": 1, "patient_id": 9999, "start_time": slot_time}
     )
     assert res_pat.status_code == 404
+
+
+def test_root_path_aliases_compatibility(client):
+    """Direct root paths /appointments and /doctors/{id}/availability work identically to /api/v1."""
+    future_tue = get_next_weekday(date.today(), target_weekday=1)
+    slot_time = f"{future_tue.isoformat()}T14:00:00"
+
+    # Call /appointments directly
+    res = client.post(
+        "/appointments",
+        json={"doctor_id": 1, "patient_id": 1, "start_time": slot_time}
+    )
+    assert res.status_code == 201
+
+    # Call /doctors/1/availability directly
+    avail_res = client.get(f"/doctors/1/availability?date={future_tue.isoformat()}")
+    assert avail_res.status_code == 200
+    assert avail_res.json()["doctor_id"] == 1
