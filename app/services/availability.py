@@ -19,6 +19,19 @@ def format_slot_label(start_dt: datetime, end_dt: datetime) -> str:
     return f"{start_dt.strftime('%I:%M %p')} - {end_dt.strftime('%I:%M %p')}"
 
 
+def get_clinic_now() -> datetime:
+    """
+    Returns the current datetime in the clinic's operating timezone (e.g. Africa/Nairobi, UTC+3)
+    stripped of tzinfo so it can be accurately compared against doctor working hours and naive slot times.
+    """
+    try:
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo(settings.CLINIC_TIMEZONE)
+        return datetime.now(tz).replace(tzinfo=None)
+    except Exception:
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def get_doctor_schedule_slots(
     db: Session,
     doctor_id: int,
@@ -51,9 +64,14 @@ def get_doctor_schedule_slots(
         return [], []
 
     if current_time is None:
-        current_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        current_time = get_clinic_now()
     elif current_time.tzinfo is not None:
-        current_time = current_time.astimezone(timezone.utc).replace(tzinfo=None)
+        try:
+            import zoneinfo
+            tz = zoneinfo.ZoneInfo(settings.CLINIC_TIMEZONE)
+            current_time = current_time.astimezone(tz).replace(tzinfo=None)
+        except Exception:
+            current_time = current_time.astimezone(timezone.utc).replace(tzinfo=None)
 
     advance_cutoff = current_time + timedelta(hours=settings.MIN_ADVANCE_BOOKING_HOURS)
 

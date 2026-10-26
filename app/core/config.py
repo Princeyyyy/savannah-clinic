@@ -11,7 +11,10 @@ class Settings(BaseSettings):
     # Database URL defaults to local SQLite, but seamlessly accepts PostgreSQL in production (e.g. Render)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./clinic.db")
     
-    # Minimum advance notice required for booking (Bonus: Prevention of bookings within 1 hour)
+    # Clinic operating timezone (Savannah Informatics is based in Nairobi, Kenya)
+    CLINIC_TIMEZONE: str = os.getenv("CLINIC_TIMEZONE", "Africa/Nairobi")
+
+    # Minimum advance notice required for booking (Prevention of bookings within 1 hour)
     MIN_ADVANCE_BOOKING_HOURS: int = 1
     
     # Slot duration in minutes

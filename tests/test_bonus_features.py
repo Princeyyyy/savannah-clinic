@@ -1,21 +1,22 @@
 from datetime import datetime, timedelta, timezone, date
 from tests.test_availability import get_next_weekday
+from app.services.availability import get_clinic_now
 
 
 def test_bonus_prevention_of_bookings_within_one_hour(client):
     """
-    Bonus requirement: Prevention of bookings within 1 hour of now.
+    Prevention of bookings within 1 hour of now.
     A slot starting 30 minutes from now must be rejected with HTTP 400.
     """
-    now_utc = datetime.now(timezone.utc)
+    clinic_now = get_clinic_now()
     # Target 30 minutes in the future, rounded to 30m boundary
-    minute = 30 if now_utc.minute < 30 else 0
-    target_dt = (now_utc + timedelta(minutes=30)).replace(minute=minute, second=0, microsecond=0)
-    if target_dt <= now_utc:
+    minute = 30 if clinic_now.minute < 30 else 0
+    target_dt = (clinic_now + timedelta(minutes=30)).replace(minute=minute, second=0, microsecond=0)
+    if target_dt <= clinic_now:
         target_dt += timedelta(minutes=30)
 
     # If within 1 hour of now
-    time_diff = (target_dt - now_utc).total_seconds() / 3600
+    time_diff = (target_dt - clinic_now).total_seconds() / 3600
     if time_diff < 1.0:
         res = client.post(
             "/api/v1/appointments",

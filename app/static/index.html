@@ -659,31 +659,38 @@
           return;
         }
 
+        const now = new Date();
+        const oneHourCutoff = new Date(Date.now() + 60 * 60 * 1000);
+
         container.innerHTML = data.all_slots.map(slot => {
           const startTime = new Date(slot.start_time);
           const timeFormatted = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-          // COLOR RULES:
-          // 1. Available -> Green (Clickable)
-          // 2. Booked -> Red (Disabled)
-          // 3. Break -> Amber (Disabled)
-          // 4. Past / Cutoff -> Slate (Disabled)
+          // Local time guard: if slot time is in the past or within 1 hour of right now
+          let effectiveStatus = slot.status;
+          if (effectiveStatus === 'AVAILABLE') {
+            if (startTime < now) {
+              effectiveStatus = 'PAST';
+            } else if (startTime < oneHourCutoff) {
+              effectiveStatus = 'CUTOFF';
+            }
+          }
 
-          if (slot.status === 'AVAILABLE') {
+          if (effectiveStatus === 'AVAILABLE') {
             return `
               <button onclick="openBookingModal('${slot.start_time}')" class="p-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-600 hover:text-white text-emerald-950 font-semibold text-xs transition flex flex-col items-center justify-center space-y-1 group">
                 <span class="group-hover:text-white">${timeFormatted}</span>
                 <span class="text-[10px] font-bold text-emerald-700 group-hover:text-emerald-100 uppercase tracking-wide">Available</span>
               </button>
             `;
-          } else if (slot.status === 'BOOKED') {
+          } else if (effectiveStatus === 'BOOKED') {
             return `
               <div class="p-3 rounded-xl border border-rose-300 bg-rose-50/70 text-rose-950 font-semibold text-xs flex flex-col items-center justify-center space-y-1 opacity-90 cursor-not-allowed">
                 <span>${timeFormatted}</span>
                 <span class="text-[10px] font-bold text-rose-700 uppercase tracking-wide">Booked</span>
               </div>
             `;
-          } else if (slot.status === 'BREAK') {
+          } else if (effectiveStatus === 'BREAK') {
             return `
               <div class="p-3 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900 font-semibold text-xs flex flex-col items-center justify-center space-y-1 opacity-80 cursor-not-allowed">
                 <span>${timeFormatted}</span>
@@ -694,7 +701,7 @@
             return `
               <div class="p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 font-semibold text-xs flex flex-col items-center justify-center space-y-1 cursor-not-allowed">
                 <span>${timeFormatted}</span>
-                <span class="text-[10px] text-slate-400 uppercase tracking-wide">${slot.status === 'CUTOFF' ? '< 1hr Cutoff' : 'Past'}</span>
+                <span class="text-[10px] text-slate-400 uppercase tracking-wide">${effectiveStatus === 'CUTOFF' ? '< 1hr Cutoff' : 'Past'}</span>
               </div>
             `;
           }
@@ -821,11 +828,23 @@
           return;
         }
 
+        const now = new Date();
+        const oneHourCutoff = new Date(Date.now() + 60 * 60 * 1000);
+
         container.innerHTML = data.all_slots.map(slot => {
           const startTime = new Date(slot.start_time);
           const timeFormatted = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-          if (slot.status === 'AVAILABLE') {
+          let effectiveStatus = slot.status;
+          if (effectiveStatus === 'AVAILABLE') {
+            if (startTime < now) {
+              effectiveStatus = 'PAST';
+            } else if (startTime < oneHourCutoff) {
+              effectiveStatus = 'CUTOFF';
+            }
+          }
+
+          if (effectiveStatus === 'AVAILABLE') {
             openCount++;
             return `
               <div class="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/70 text-emerald-950 flex flex-col justify-between">
@@ -836,7 +855,7 @@
                 <span class="text-[11px] font-semibold text-emerald-700 mt-2">Open / Unbooked</span>
               </div>
             `;
-          } else if (slot.status === 'BOOKED') {
+          } else if (effectiveStatus === 'BOOKED') {
             bookedCount++;
             return `
               <div class="p-3.5 rounded-xl border border-rose-300 bg-rose-50/70 text-rose-950 flex flex-col justify-between">
@@ -852,7 +871,7 @@
                 </div>
               </div>
             `;
-          } else if (slot.status === 'BREAK') {
+          } else if (effectiveStatus === 'BREAK') {
             return `
               <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900 flex flex-col justify-between opacity-80">
                 <span class="font-bold text-xs">${timeFormatted}</span>
@@ -863,7 +882,7 @@
             return `
               <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 flex flex-col justify-between">
                 <span class="font-bold text-xs">${timeFormatted}</span>
-                <span class="text-[11px] text-slate-400 mt-2">${slot.status === 'CUTOFF' ? '< 1hr Cutoff' : 'Past Slot'}</span>
+                <span class="text-[11px] text-slate-400 mt-2">${effectiveStatus === 'CUTOFF' ? '< 1hr Cutoff' : 'Past Slot'}</span>
               </div>
             `;
           }
@@ -1047,11 +1066,15 @@
       try {
         const res = await fetch(`/api/v1/doctors/${docId}/availability?date=${dateVal}`);
         const data = await res.json();
-        if (!data.available_slots || data.available_slots.length === 0) {
+        
+        const oneHourCutoff = new Date(Date.now() + 60 * 60 * 1000);
+        const validSlots = (data.available_slots || []).filter(iso => new Date(iso) >= oneHourCutoff);
+
+        if (validSlots.length === 0) {
           select.innerHTML = '<option value="">No open slots on this date</option>';
           return;
         }
-        select.innerHTML = data.available_slots.map(iso => {
+        select.innerHTML = validSlots.map(iso => {
           const dt = new Date(iso);
           return `<option value="${iso}">${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</option>`;
         }).join('');

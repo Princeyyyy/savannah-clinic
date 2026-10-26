@@ -9,7 +9,7 @@ from app.core.exceptions import (
     AppointmentAlreadyCancelledException,
 )
 from app.models import Doctor, WorkingHours, Patient, Appointment, AppointmentStatus
-from app.services.availability import validate_slot_alignment
+from app.services.availability import validate_slot_alignment, get_clinic_now
 
 
 def validate_booking_time(
@@ -23,27 +23,37 @@ def validate_booking_time(
     Validates that a requested slot start_time:
     1. Aligns with 30-minute boundaries.
     2. Is not in the past.
-    3. Respects the advance booking cutoff (Bonus: 1 hour).
+    3. Respects the advance booking cutoff (1 hour).
     4. Falls within the doctor's working hours and outside lunch breaks.
     5. Is not already taken by another active booking.
-    Returns normalized naive UTC datetime.
+    Returns normalized naive datetime in clinic time.
     """
-    # Normalize to naive UTC
+    # Normalize start_time to naive clinic time if timezone is present
     if start_time.tzinfo is not None:
-        start_time = start_time.astimezone(timezone.utc).replace(tzinfo=None)
+        try:
+            import zoneinfo
+            tz = zoneinfo.ZoneInfo(settings.CLINIC_TIMEZONE)
+            start_time = start_time.astimezone(tz).replace(tzinfo=None)
+        except Exception:
+            start_time = start_time.astimezone(timezone.utc).replace(tzinfo=None)
 
     validate_slot_alignment(start_time, settings.SLOT_DURATION_MINUTES)
 
     if current_time is None:
-        current_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        current_time = get_clinic_now()
     elif current_time.tzinfo is not None:
-        current_time = current_time.astimezone(timezone.utc).replace(tzinfo=None)
+        try:
+            import zoneinfo
+            tz = zoneinfo.ZoneInfo(settings.CLINIC_TIMEZONE)
+            current_time = current_time.astimezone(tz).replace(tzinfo=None)
+        except Exception:
+            current_time = current_time.astimezone(timezone.utc).replace(tzinfo=None)
 
     # Validate not in the past
     if start_time < current_time:
         raise InvalidBookingException("Cannot book an appointment slot in the past.")
 
-    # Validate advance booking cutoff (Bonus)
+    # Validate advance booking cutoff (1 hour)
     advance_cutoff = current_time + timedelta(hours=settings.MIN_ADVANCE_BOOKING_HOURS)
     if start_time < advance_cutoff:
         raise InvalidBookingException(
