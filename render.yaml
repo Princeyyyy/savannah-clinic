@@ -1,0 +1,26 @@
+databases:
+  - name: savannah-clinic-db
+    databaseName: clinic_db
+    user: clinic_user
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: savannah-clinic-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: savannah-clinic-db
+          property: connectionString
+      - key: MIN_ADVANCE_BOOKING_HOURS
+        value: "1"
+      - key: SLOT_DURATION_MINUTES
+        value: "30"
