@@ -27,15 +27,15 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="""
-    # Savannah Informatics — Clinic Booking System API
+    Savannah Informatics — Clinic Booking System API
     
     A RESTful backend for managing doctor appointments in a small clinic environment.
     
-    ### Key Features:
-    * **Doctor Availability:** Dynamic 30-minute slot calculation based on weekly schedules.
-    * **Strict Concurrency Protection:** Partial unique index prevents double-booking race conditions.
-    * **Appointment Lifecycle:** Atomic booking, cancellation with reason, and rescheduling.
-    * **Advance Scheduling & Patient History:** Strict prevention of past bookings & chronological patient upcoming appointments.
+    Key Features:
+    * Doctor Availability: Dynamic 30-minute slot calculation based on weekly schedules.
+    * Strict Concurrency Protection: Partial unique index prevents double-booking race conditions.
+    * Appointment Lifecycle: Atomic booking, cancellation with reason, and rescheduling.
+    * Advance Scheduling & Patient History: Strict prevention of past bookings & chronological patient upcoming appointments.
     """,
     lifespan=lifespan,
     docs_url="/docs",

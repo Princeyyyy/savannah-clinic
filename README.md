@@ -278,6 +278,6 @@ In accordance with the assessment instructions, our candid reflection on the use
 
 It covers:
 1. Exact AI usage across all four sections.
-2. A concrete example of an AI suggestion that improved the slot calculation algorithm.
-3. A critical example where AI generated a flawed, race-condition-prone booking implementation, and how engineering judgment caught and replaced it with a database partial unique index.
-4. Two key decisions made independently without AI (dynamic slot calculation and zero-Docker native Python architecture).
+2. A concrete example where an AI suggestion improved the slot calculation interval stepping loop.
+3. Real-world examples where AI output was wrong and caught during testing (e.g. cloud UTC vs. local Nairobi timezone mismatch allowing past slot bookings, and SQLAlchemy 2.0 driver crash on Render).
+4. Three architectural decisions made independently without AI (discarding the 1-hour cutoff for real-time booking, dual-role Patient/Doctor views with color-coded slots, and zero-Docker native Python architecture).
