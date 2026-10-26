@@ -1,21 +1,21 @@
+import os
 import pytest
 from datetime import time
+from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.db.base import Base
 from app.api.deps import get_db
 from app.models import Doctor, WorkingHours, Patient
 
-# In-memory SQLite with StaticPool so all connections share the same memory DB in tests
-TEST_DATABASE_URL = "sqlite:///:memory:"
+TEST_DB_FILE = Path("./test_clinic.db")
+TEST_DATABASE_URL = f"sqlite:///{TEST_DB_FILE}"
 
 test_engine = create_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
+    connect_args={"check_same_thread": False, "timeout": 30.0},
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
@@ -77,3 +77,9 @@ def client():
         yield test_client
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
+    test_engine.dispose()
+    if TEST_DB_FILE.exists():
+        try:
+            TEST_DB_FILE.unlink()
+        except Exception:
+            pass

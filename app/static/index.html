@@ -45,6 +45,7 @@
           <div class="flex items-center space-x-2">
             <span class="text-base font-bold text-slate-900 tracking-tight">Savannah Clinic</span>
             <span class="px-2 py-0.5 text-[11px] font-semibold bg-emerald-100 text-emerald-800 rounded-md">Interactive Live Demo</span>
+            <span id="db-engine-badge" class="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-700 rounded-md border border-slate-200">DB: Detecting...</span>
           </div>
           <p class="text-xs text-slate-500">Implementation Engineer Assessment</p>
         </div>
@@ -548,6 +549,22 @@
       document.getElementById('doctor-date-input').value = defaultDate;
 
       try {
+        // Fetch Health / DB info
+        fetch('/health').then(r => r.json()).then(data => {
+          if (data && data.database) {
+            const badge = document.getElementById('db-engine-badge');
+            if (badge) {
+              const isPostgres = (data.database.engine || '').includes('postgres');
+              badge.innerText = `DB: ${data.database.environment || data.database.engine}`;
+              if (isPostgres) {
+                badge.className = 'px-2 py-0.5 text-[11px] font-semibold bg-indigo-50 text-indigo-700 rounded-md border border-indigo-200';
+              } else {
+                badge.className = 'px-2 py-0.5 text-[11px] font-semibold bg-amber-50 text-amber-800 rounded-md border border-amber-200';
+              }
+            }
+          }
+        }).catch(() => {});
+
         // Fetch Doctors
         const resDocs = await fetch('/api/v1/doctors');
         doctors = await resDocs.json();

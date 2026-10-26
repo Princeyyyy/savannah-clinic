@@ -69,6 +69,8 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/health", tags=["Health"], summary="Health check & database connectivity probe")
 def health_check():
     """Verify service status and database connectivity."""
+    engine_dialect = engine.dialect.name
+    db_environment = "Local (SQLite)" if engine_dialect == "sqlite" else "Render Cloud (PostgreSQL)"
     db_status = "connected"
     try:
         with engine.connect() as conn:
@@ -77,14 +79,25 @@ def health_check():
         db_status = f"unhealthy: {str(e)}"
         return JSONResponse(
             status_code=503,
-            content={"status": "degraded", "database": db_status}
+            content={
+                "status": "degraded",
+                "database": {
+                    "status": db_status,
+                    "engine": engine_dialect,
+                    "environment": db_environment
+                }
+            }
         )
 
     return {
         "status": "healthy",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "database": db_status
+        "database": {
+            "status": db_status,
+            "engine": engine_dialect,
+            "environment": db_environment
+        }
     }
 
 
