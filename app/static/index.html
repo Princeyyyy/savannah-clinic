@@ -474,13 +474,9 @@
     let selectedDoctorPortalId = null;
     let pendingBookingSlotIso = null;
 
-    // Helper: default date (tomorrow or next weekday)
-    function getTomorrowIso() {
+    // Helper: default date to TODAY (the day the user opens the application)
+    function getTodayIso() {
       const d = new Date();
-      d.setDate(d.getDate() + 1);
-      // Skip weekends to Monday if needed
-      if (d.getDay() === 0) d.setDate(d.getDate() + 1); // Sunday -> Monday
-      if (d.getDay() === 6) d.setDate(d.getDate() + 2); // Saturday -> Monday
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
@@ -543,9 +539,15 @@
 
     // Initial Load
     async function initApp() {
-      const defaultDate = getTomorrowIso();
-      document.getElementById('patient-date-input').value = defaultDate;
-      document.getElementById('doctor-date-input').value = defaultDate;
+      const todayDate = getTodayIso();
+      const patientDateInput = document.getElementById('patient-date-input');
+      const doctorDateInput = document.getElementById('doctor-date-input');
+      const rescheduleDateInput = document.getElementById('reschedule-date-input');
+
+      patientDateInput.value = todayDate;
+      patientDateInput.min = todayDate;
+      doctorDateInput.value = todayDate;
+      if (rescheduleDateInput) rescheduleDateInput.min = todayDate;
 
       try {
         // Fetch Doctors
@@ -1027,7 +1029,7 @@
       document.getElementById('reschedule-appt-id').value = apptId;
       document.getElementById('reschedule-doc-id').value = docId;
       document.getElementById('reschedule-modal-subtitle').innerText = `Moving appointment #${apptId} to a new slot. Original slot will be freed automatically.`;
-      document.getElementById('reschedule-date-input').value = document.getElementById('patient-date-input').value;
+      document.getElementById('reschedule-date-input').value = document.getElementById('patient-date-input').value || getTodayIso();
       document.getElementById('reschedule-modal').classList.remove('hidden');
       fetchRescheduleSlots();
     }
