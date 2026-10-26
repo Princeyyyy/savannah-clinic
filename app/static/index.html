@@ -164,10 +164,10 @@
               <span><strong>Slot Duration:</strong> 30 minutes</span>
             </div>
             <div class="flex items-start space-x-2">
-              <svg class="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span><strong>Advance Rule:</strong> Bookings within 1 hour of now are restricted.</span>
+              <span><strong>Real-Time Booking:</strong> Open slots remain available until their start time.</span>
             </div>
           </div>
         </div>
@@ -196,7 +196,7 @@
               </span>
               <span class="inline-flex items-center space-x-1.5">
                 <span class="w-3 h-3 rounded-full bg-slate-300"></span>
-                <span class="text-slate-500">Past / Cutoff</span>
+                <span class="text-slate-500">Past Slot</span>
               </span>
             </div>
           </div>
@@ -660,20 +660,15 @@
         }
 
         const now = new Date();
-        const oneHourCutoff = new Date(Date.now() + 60 * 60 * 1000);
 
         container.innerHTML = data.all_slots.map(slot => {
           const startTime = new Date(slot.start_time);
           const timeFormatted = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-          // Local time guard: if slot time is in the past or within 1 hour of right now
+          // Local time check: mark as past only if the time has already passed
           let effectiveStatus = slot.status;
-          if (effectiveStatus === 'AVAILABLE') {
-            if (startTime < now) {
-              effectiveStatus = 'PAST';
-            } else if (startTime < oneHourCutoff) {
-              effectiveStatus = 'CUTOFF';
-            }
+          if (effectiveStatus === 'AVAILABLE' && startTime < now) {
+            effectiveStatus = 'PAST';
           }
 
           if (effectiveStatus === 'AVAILABLE') {
@@ -701,7 +696,7 @@
             return `
               <div class="p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 font-semibold text-xs flex flex-col items-center justify-center space-y-1 cursor-not-allowed">
                 <span>${timeFormatted}</span>
-                <span class="text-[10px] text-slate-400 uppercase tracking-wide">${effectiveStatus === 'CUTOFF' ? '< 1hr Cutoff' : 'Past'}</span>
+                <span class="text-[10px] text-slate-400 uppercase tracking-wide">Past</span>
               </div>
             `;
           }
@@ -829,19 +824,14 @@
         }
 
         const now = new Date();
-        const oneHourCutoff = new Date(Date.now() + 60 * 60 * 1000);
 
         container.innerHTML = data.all_slots.map(slot => {
           const startTime = new Date(slot.start_time);
           const timeFormatted = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
           let effectiveStatus = slot.status;
-          if (effectiveStatus === 'AVAILABLE') {
-            if (startTime < now) {
-              effectiveStatus = 'PAST';
-            } else if (startTime < oneHourCutoff) {
-              effectiveStatus = 'CUTOFF';
-            }
+          if (effectiveStatus === 'AVAILABLE' && startTime < now) {
+            effectiveStatus = 'PAST';
           }
 
           if (effectiveStatus === 'AVAILABLE') {
@@ -882,7 +872,7 @@
             return `
               <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 flex flex-col justify-between">
                 <span class="font-bold text-xs">${timeFormatted}</span>
-                <span class="text-[11px] text-slate-400 mt-2">${effectiveStatus === 'CUTOFF' ? '< 1hr Cutoff' : 'Past Slot'}</span>
+                <span class="text-[11px] text-slate-400 mt-2">Past Slot</span>
               </div>
             `;
           }
@@ -1067,8 +1057,8 @@
         const res = await fetch(`/api/v1/doctors/${docId}/availability?date=${dateVal}`);
         const data = await res.json();
         
-        const oneHourCutoff = new Date(Date.now() + 60 * 60 * 1000);
-        const validSlots = (data.available_slots || []).filter(iso => new Date(iso) >= oneHourCutoff);
+        const now = new Date();
+        const validSlots = (data.available_slots || []).filter(iso => new Date(iso) >= now);
 
         if (validSlots.length === 0) {
           select.innerHTML = '<option value="">No open slots on this date</option>';

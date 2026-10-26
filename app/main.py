@@ -35,7 +35,7 @@ app = FastAPI(
     * **Doctor Availability:** Dynamic 30-minute slot calculation based on weekly schedules.
     * **Strict Concurrency Protection:** Partial unique index prevents double-booking race conditions.
     * **Appointment Lifecycle:** Atomic booking, cancellation with reason, and rescheduling.
-    * **Advance Scheduling & Patient History:** 1-hour advance notice booking protection & chronological patient upcoming appointments.
+    * **Advance Scheduling & Patient History:** Strict prevention of past bookings & chronological patient upcoming appointments.
     """,
     lifespan=lifespan,
     docs_url="/docs",

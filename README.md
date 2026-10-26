@@ -140,8 +140,8 @@ The API adheres to strict REST conventions, returning standard HTTP status codes
 | `GET` | `/api/v1/patients/{id}/appointments` | Patient's upcoming appointments sorted chronologically | `200 OK`, `404 Not Found` |
 
 ### Advance Scheduling & Patient Appointment Features
-1. **Prevention of Bookings Within 1 Hour of Now:**
-   Any booking attempt where `start_time < now() + 1 hour` is rejected with `HTTP 400 Bad Request` ("Bookings must be made at least 1 hour(s) in advance").
+1. **Strict Prevention of Past Bookings:**
+   Any booking attempt where `start_time < current_time` is rejected with `HTTP 400 Bad Request` ("Cannot book an appointment slot in the past."). Slots remain open and bookable right up until their scheduled start time.
 2. **Patient Upcoming Appointments Endpoint:**
    `GET /api/v1/patients/{id}/appointments` queries only future active bookings (`start_time >= now` and `status == 'BOOKED'`), ordered chronologically (`ORDER BY start_time ASC`).
 

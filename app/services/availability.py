@@ -73,8 +73,6 @@ def get_doctor_schedule_slots(
         except Exception:
             current_time = current_time.astimezone(timezone.utc).replace(tzinfo=None)
 
-    advance_cutoff = current_time + timedelta(hours=settings.MIN_ADVANCE_BOOKING_HOURS)
-
     # Query all active bookings for this doctor on query_date
     start_of_day = datetime.combine(query_date, time.min)
     end_of_day = datetime.combine(query_date, time.max)
@@ -128,10 +126,6 @@ def get_doctor_schedule_slots(
             pat_name = active_appt.patient.name if active_appt.patient else f"Patient #{active_appt.patient_id}"
         elif slot_time < current_time:
             slot_status = "PAST"
-            appt_id = None
-            pat_name = None
-        elif slot_time < advance_cutoff:
-            slot_status = "CUTOFF"
             appt_id = None
             pat_name = None
         else:

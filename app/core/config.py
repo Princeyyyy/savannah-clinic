@@ -14,9 +14,6 @@ class Settings(BaseSettings):
     # Clinic operating timezone (Savannah Informatics is based in Nairobi, Kenya)
     CLINIC_TIMEZONE: str = os.getenv("CLINIC_TIMEZONE", "Africa/Nairobi")
 
-    # Minimum advance notice required for booking (Prevention of bookings within 1 hour)
-    MIN_ADVANCE_BOOKING_HOURS: int = 1
-    
     # Slot duration in minutes
     SLOT_DURATION_MINUTES: int = 30
     

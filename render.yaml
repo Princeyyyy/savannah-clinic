@@ -11,7 +11,5 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
-      - key: MIN_ADVANCE_BOOKING_HOURS
-        value: "1"
       - key: SLOT_DURATION_MINUTES
         value: "30"
