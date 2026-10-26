@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savannah Clinic — Online Booking Portal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Navigation Bar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+          S
+        </div>
+        <div>
+          <span class="text-lg font-bold text-slate-900 tracking-tight">Savannah Clinic</span>
+          <span class="block text-xs text-slate-500 font-medium">Smart Healthcare Appointment System</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <a href="/docs" target="_blank" class="text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-1.5 rounded-lg border border-emerald-200 transition">
+          Interactive API Docs (/docs) &rarr;
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+    
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="hidden fixed bottom-6 right-6 max-w-md p-4 rounded-xl shadow-2xl text-white z-50 transition transform duration-300">
+      <div class="flex items-start space-x-3">
+        <div id="toast-icon" class="text-xl font-bold"></div>
+        <div>
+          <h4 id="toast-title" class="font-semibold text-sm"></h4>
+          <p id="toast-msg" class="text-xs mt-0.5 opacity-90"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="border-b border-slate-200 mb-8">
+      <nav class="-mb-px flex space-x-8">
+        <button onclick="switchTab('book')" id="tab-btn-book" class="tab-btn border-b-2 border-emerald-600 text-emerald-600 py-3 px-1 text-sm font-bold flex items-center space-x-2">
+          <span>📅 Book Appointment</span>
+        </button>
+        <button onclick="switchTab('manage')" id="tab-btn-manage" class="tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 py-3 px-1 text-sm font-bold flex items-center space-x-2">
+          <span>📋 Clinic Schedule & Cancel/Reschedule</span>
+        </button>
+        <button onclick="switchTab('patient')" id="tab-btn-patient" class="tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 py-3 px-1 text-sm font-bold flex items-center space-x-2">
+          <span>👤 Patient View (Bonus)</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- TAB 1: BOOK APPOINTMENT -->
+    <section id="tab-book" class="space-y-8">
+      <!-- Step 1: Select Doctor -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Step 1: Select a Doctor</h2>
+            <p class="text-xs text-slate-500">Choose one of the 5 clinic practitioners</p>
+          </div>
+          <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">30-min slots</span>
+        </div>
+        <div id="doctors-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Loaded dynamically -->
+          <div class="text-sm text-slate-400 py-4">Loading doctors...</div>
+        </div>
+      </div>
+
+      <!-- Step 2 & 3: Date & Available Slots -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Date Selector Card -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
+          <h2 class="text-base font-bold text-slate-900 mb-1">Step 2: Choose Date</h2>
+          <p class="text-xs text-slate-500 mb-4">Clinic operates Monday to Friday (9am - 5pm, 1-2pm Lunch)</p>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Appointment Date</label>
+          <input type="date" id="booking-date" onchange="fetchAvailability()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          <div class="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs">
+            <strong>Bonus Rule Active:</strong> Slots within 1 hour of now are automatically protected from booking.
+          </div>
+        </div>
+
+        <!-- Available Slots Grid -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Step 3: Available 30-Minute Slots</h2>
+              <p class="text-xs text-slate-500" id="slots-subtitle">Select a doctor and date to view openings</p>
+            </div>
+            <span id="slot-count" class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">0 slots</span>
+          </div>
+
+          <div id="slots-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 py-2">
+            <div class="col-span-full text-center py-12 text-slate-400 text-sm">
+              Please choose a doctor and a date above to display live available slots.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MANAGE APPOINTMENTS -->
+    <section id="tab-manage" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Clinic Bookings Register</h2>
+            <p class="text-xs text-slate-500">Live view of all bookings, cancellations, and real-time statuses</p>
+          </div>
+          <button onclick="fetchAppointments()" class="text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition self-start sm:self-auto">
+            🔄 Refresh List
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-y border-slate-200">
+              <tr>
+                <th class="py-3 px-4">ID</th>
+                <th class="py-3 px-4">Doctor</th>
+                <th class="py-3 px-4">Patient</th>
+                <th class="py-3 px-4">Date & Time (UTC)</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Cancellation Reason</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="appointments-tbody" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="7" class="text-center py-8 text-slate-400">Loading appointments...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PATIENT VIEW (BONUS) -->
+    <section id="tab-patient" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-1">Bonus: Patient Upcoming Appointments</h2>
+        <p class="text-xs text-slate-500 mb-4">Endpoint: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">GET /patients/{id}/appointments</code> (sorted chronologically)</p>
+        
+        <div class="max-w-xs mb-6">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Select Patient</label>
+          <select id="patient-select" onchange="fetchPatientAppointments()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <!-- Populated via API -->
+          </select>
+        </div>
+
+        <div id="patient-appointments-list" class="space-y-3">
+          <div class="text-sm text-slate-400 py-6">Select a patient above.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOOKING MODAL -->
+  <div id="booking-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Confirm Slot Booking</h3>
+      <p class="text-xs text-slate-500 mb-4" id="modal-slot-details"></p>
+
+      <form onsubmit="handleBookSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Select Patient</label>
+          <select id="modal-patient-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeBookingModal()" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium">Cancel</button>
+          <button type="submit" id="modal-submit-btn" class="px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition">Confirm Booking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CANCEL MODAL -->
+  <div id="cancel-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Cancel Appointment</h3>
+      <p class="text-xs text-slate-500 mb-4" id="cancel-modal-details"></p>
+
+      <form onsubmit="handleCancelSubmit(event)" class="space-y-4">
+        <input type="hidden" id="cancel-appt-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Reason for Cancellation (Required)</label>
+          <textarea id="cancel-reason" required minlength="3" rows="3" placeholder="e.g., Patient recovered, scheduling conflict..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeCancelModal()" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium">Dismiss</button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow transition">Confirm Cancellation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- RESCHEDULE MODAL -->
+  <div id="reschedule-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Reschedule Appointment</h3>
+      <p class="text-xs text-slate-500 mb-4" id="reschedule-modal-details"></p>
+
+      <form onsubmit="handleRescheduleSubmit(event)" class="space-y-4">
+        <input type="hidden" id="reschedule-appt-id">
+        <input type="hidden" id="reschedule-doctor-id">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">New Date</label>
+          <input type="date" id="reschedule-date" onchange="fetchRescheduleSlots()" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">New 30-Minute Slot</label>
+          <select id="reschedule-slot-select" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="">Pick date first</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeRescheduleModal()" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition">Reschedule Now</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400 mt-12">
+    Savannah Informatics Implementation Engineer Assessment &bull; Powered by FastAPI &bull; Production Ready
+  </footer>
+
+  <!-- Frontend Logic -->
+  <script>
+    let doctors = [];
+    let patients = [];
+    let selectedDoctorId = null;
+    let selectedSlotIso = null;
+
+    // Set default date to tomorrow or next business day
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yyyy = tomorrow.getFullYear();
+    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const dd = String(tomorrow.getDate()).padStart(2, '0');
+    document.getElementById('booking-date').value = `${yyyy}-${mm}-${dd}`;
+
+    function showToast(title, msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toast-icon');
+      document.getElementById('toast-title').innerText = title;
+      document.getElementById('toast-msg').innerText = msg;
+
+      toast.className = `fixed bottom-6 right-6 max-w-md p-4 rounded-xl shadow-2xl text-white z-50 transition transform duration-300 ${
+        isError ? 'bg-red-600' : 'bg-emerald-600'
+      }`;
+      icon.innerText = isError ? '⚠️' : '✅';
+      toast.classList.remove('hidden');
+
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 5000);
+    }
+
+    function switchTab(tab) {
+      ['book', 'manage', 'patient'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${t}`).className = 'tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 py-3 px-1 text-sm font-bold flex items-center space-x-2';
+      });
+
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tab}`).className = 'tab-btn border-b-2 border-emerald-600 text-emerald-600 py-3 px-1 text-sm font-bold flex items-center space-x-2';
+
+      if (tab === 'manage') fetchAppointments();
+      if (tab === 'patient') fetchPatientAppointments();
+    }
+
+    async function init() {
+      try {
+        // Fetch doctors
+        const resDocs = await fetch('/api/v1/doctors');
+        doctors = await resDocs.json();
+        renderDoctors();
+
+        // Fetch patients
+        const resPatients = await fetch('/api/v1/patients');
+        patients = await resPatients.json();
+        populatePatientDropdowns();
+
+        // Auto select first doctor
+        if (doctors.length > 0) {
+          selectDoctor(doctors[0].id);
+        }
+      } catch (err) {
+        showToast('Error', 'Failed to connect to API: ' + err.message, true);
+      }
+    }
+
+    function renderDoctors() {
+      const container = document.getElementById('doctors-list');
+      container.innerHTML = doctors.map(doc => `
+        <div onclick="selectDoctor(${doc.id})" id="doc-card-${doc.id}" class="p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-500 transition bg-slate-50">
+          <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs mb-2">
+            ${doc.name.split(' ').map(n=>n[0]).join('')}
+          </div>
+          <h4 class="font-bold text-sm text-slate-900">${doc.name}</h4>
+          <span class="text-xs text-emerald-600 font-medium block">${doc.specialty}</span>
+          <span class="text-[10px] text-slate-400 mt-1 block truncate">${doc.email}</span>
+        </div>
+      `).join('');
+    }
+
+    function populatePatientDropdowns() {
+      const modalSelect = document.getElementById('modal-patient-id');
+      const tabSelect = document.getElementById('patient-select');
+      const options = patients.map(p => `<option value="${p.id}">${p.name} (${p.email})</option>`).join('');
+      modalSelect.innerHTML = options;
+      tabSelect.innerHTML = options;
+    }
+
+    function selectDoctor(id) {
+      selectedDoctorId = id;
+      doctors.forEach(d => {
+        const card = document.getElementById(`doc-card-${d.id}`);
+        if (card) {
+          if (d.id === id) {
+            card.className = 'p-4 rounded-xl border-2 border-emerald-600 bg-emerald-50/50 shadow-sm transition';
+          } else {
+            card.className = 'p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-slate-300 bg-white transition';
+          }
+        }
+      });
+      fetchAvailability();
+    }
+
+    async function fetchAvailability() {
+      if (!selectedDoctorId) return;
+      const dateVal = document.getElementById('booking-date').value;
+      if (!dateVal) return;
+
+      const doc = doctors.find(d => d.id === selectedDoctorId);
+      document.getElementById('slots-subtitle').innerText = `Open slots for ${doc.name} on ${dateVal}`;
+
+      const container = document.getElementById('slots-container');
+      container.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400 text-sm">Checking available slots...</div>';
+
+      try {
+        const res = await fetch(`/api/v1/doctors/${selectedDoctorId}/availability?date=${dateVal}`);
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Failed to fetch slots');
+        }
+        const data = await res.json();
+        document.getElementById('slot-count').innerText = `${data.available_slots.length} available`;
+
+        if (data.available_slots.length === 0) {
+          container.innerHTML = `
+            <div class="col-span-full text-center py-12 text-slate-400">
+              <p class="font-medium text-sm text-slate-600">No open slots on this date.</p>
+              <p class="text-xs text-slate-400 mt-1">Doctor may be off, all slots are booked, or date falls in past / lunch break.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = data.available_slots.map(iso => {
+          const dt = new Date(iso);
+          const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          return `
+            <button onclick="openBookingModal('${iso}')" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 font-semibold text-xs transition flex flex-col items-center justify-center space-y-1">
+              <span>${timeStr}</span>
+              <span class="text-[10px] opacity-75">30 mins</span>
+            </button>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-red-500 text-xs">${err.message}</div>`;
+      }
+    }
+
+    function openBookingModal(iso) {
+      selectedSlotIso = iso;
+      const doc = doctors.find(d => d.id === selectedDoctorId);
+      const dt = new Date(iso);
+      document.getElementById('modal-slot-details').innerText = 
+        `${doc.name} • ${dt.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} at ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+      document.getElementById('booking-modal').classList.remove('hidden');
+    }
+
+    function closeBookingModal() {
+      document.getElementById('booking-modal').classList.add('hidden');
+    }
+
+    async function handleBookSubmit(e) {
+      e.preventDefault();
+      const patientId = parseInt(document.getElementById('modal-patient-id').value);
+      const btn = document.getElementById('modal-submit-btn');
+      btn.disabled = true;
+      btn.innerText = 'Reserving...';
+
+      try {
+        const res = await fetch('/api/v1/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            doctor_id: selectedDoctorId,
+            patient_id: patientId,
+            start_time: selectedSlotIso
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Booking failed');
+
+        showToast('Booking Confirmed!', `Appointment #${data.id} reserved successfully.`);
+        closeBookingModal();
+        fetchAvailability();
+      } catch (err) {
+        showToast('Booking Failed', err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Confirm Booking';
+      }
+    }
+
+    async function fetchAppointments() {
+      const tbody = document.getElementById('appointments-tbody');
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">Loading appointments...</td></tr>';
+
+      try {
+        const res = await fetch('/api/v1/appointments');
+        const list = await res.json();
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400 text-xs">No appointments created yet. Book one from the Booking tab!</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(a => {
+          const dt = new Date(a.start_time);
+          const isCancelled = a.status === 'CANCELLED';
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="py-3 px-4 font-mono text-xs text-slate-500">#${a.id}</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">${a.doctor_name || 'Dr. ID ' + a.doctor_id}</td>
+              <td class="py-3 px-4 text-slate-700">${a.patient_name || 'Patient ID ' + a.patient_id}</td>
+              <td class="py-3 px-4 text-xs text-slate-600">${dt.toUTCString().replace('GMT', 'UTC')}</td>
+              <td class="py-3 px-4">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  isCancelled ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                }">
+                  ${a.status}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-xs text-slate-400 italic">${a.cancellation_reason || '-'}</td>
+              <td class="py-3 px-4 text-right space-x-2">
+                ${!isCancelled ? `
+                  <button onclick="openRescheduleModal(${a.id}, ${a.doctor_id})" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Reschedule</button>
+                  <button onclick="openCancelModal(${a.id})" class="text-xs font-semibold text-red-600 hover:text-red-800">Cancel</button>
+                ` : '<span class="text-xs text-slate-300">Closed</span>'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-red-500 text-xs">${err.message}</td></tr>`;
+      }
+    }
+
+    function openCancelModal(id) {
+      document.getElementById('cancel-appt-id').value = id;
+      document.getElementById('cancel-modal-details').innerText = `Cancelling appointment #${id}. The slot will immediately become bookable again.`;
+      document.getElementById('cancel-reason').value = '';
+      document.getElementById('cancel-modal').classList.remove('hidden');
+    }
+
+    function closeCancelModal() {
+      document.getElementById('cancel-modal').classList.add('hidden');
+    }
+
+    async function handleCancelSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('cancel-appt-id').value;
+      const reason = document.getElementById('cancel-reason').value;
+
+      try {
+        const res = await fetch(`/api/v1/appointments/${id}/cancel`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Cancellation failed');
+
+        showToast('Cancelled', `Appointment #${id} has been cancelled.`);
+        closeCancelModal();
+        fetchAppointments();
+        fetchAvailability();
+      } catch (err) {
+        showToast('Error', err.message, true);
+      }
+    }
+
+    function openRescheduleModal(id, docId) {
+      document.getElementById('reschedule-appt-id').value = id;
+      document.getElementById('reschedule-doctor-id').value = docId;
+      document.getElementById('reschedule-modal-details').innerText = `Rescheduling appointment #${id}.`;
+      document.getElementById('reschedule-date').value = document.getElementById('booking-date').value;
+      document.getElementById('reschedule-modal').classList.remove('hidden');
+      fetchRescheduleSlots();
+    }
+
+    function closeRescheduleModal() {
+      document.getElementById('reschedule-modal').classList.add('hidden');
+    }
+
+    async function fetchRescheduleSlots() {
+      const docId = document.getElementById('reschedule-doctor-id').value;
+      const dateVal = document.getElementById('reschedule-date').value;
+      const select = document.getElementById('reschedule-slot-select');
+      select.innerHTML = '<option value="">Loading slots...</option>';
+
+      try {
+        const res = await fetch(`/api/v1/doctors/${docId}/availability?date=${dateVal}`);
+        const data = await res.json();
+        if (data.available_slots.length === 0) {
+          select.innerHTML = '<option value="">No open slots on this date</option>';
+          return;
+        }
+        select.innerHTML = data.available_slots.map(iso => {
+          const dt = new Date(iso);
+          return `<option value="${iso}">${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</option>`;
+        }).join('');
+      } catch (err) {
+        select.innerHTML = `<option value="">Error: ${err.message}</option>`;
+      }
+    }
+
+    async function handleRescheduleSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('reschedule-appt-id').value;
+      const newSlot = document.getElementById('reschedule-slot-select').value;
+      if (!newSlot) {
+        showToast('Error', 'Please pick a slot.', true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/appointments/${id}/reschedule`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_start_time: newSlot })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Rescheduling failed');
+
+        showToast('Rescheduled!', `Appointment #${id} moved to new slot.`);
+        closeRescheduleModal();
+        fetchAppointments();
+        fetchAvailability();
+      } catch (err) {
+        showToast('Reschedule Failed', err.message, true);
+      }
+    }
+
+    async function fetchPatientAppointments() {
+      const patientId = document.getElementById('patient-select').value;
+      const container = document.getElementById('patient-appointments-list');
+      if (!patientId) return;
+
+      container.innerHTML = '<div class="text-sm text-slate-400 py-4">Fetching upcoming appointments...</div>';
+
+      try {
+        const res = await fetch(`/api/v1/patients/${patientId}/appointments`);
+        const list = await res.json();
+
+        if (list.length === 0) {
+          container.innerHTML = `
+            <div class="p-6 bg-slate-50 rounded-xl text-center text-slate-400 text-xs">
+              No upcoming appointments found for this patient.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = list.map(a => {
+          const dt = new Date(a.start_time);
+          return `
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span class="text-xs font-mono text-slate-400">#${a.id}</span>
+                <h4 class="font-bold text-sm text-slate-900">${a.doctor_name || 'Dr. ID ' + a.doctor_id}</h4>
+                <p class="text-xs text-slate-500">${dt.toUTCString().replace('GMT', 'UTC')}</p>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                Upcoming
+              </span>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="text-xs text-red-500 py-4">${err.message}</div>`;
+      }
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>
