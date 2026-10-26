@@ -1,0 +1,86 @@
+import os
+import pytest
+from datetime import time
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from app.main import app
+from app.db.base import Base
+from app.api.deps import get_db
+from app.models import Doctor, WorkingHours, Patient
+
+# In-memory SQLite with StaticPool so all connections share the same memory DB in tests
+TEST_DATABASE_URL = "sqlite:///:memory:"
+
+test_engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+
+def seed_test_data(db):
+    # Seed 2 test doctors
+    doc1 = Doctor(
+        name="Dr. Joyce Moraa",
+        specialty="General Practice",
+        email="joyce.moraa@test.com",
+        is_active=True
+    )
+    doc2 = Doctor(
+        name="Dr. Kevin Otieno",
+        specialty="Pediatrics",
+        email="kevin.otieno@test.com",
+        is_active=True
+    )
+    db.add_all([doc1, doc2])
+    db.flush()
+
+    # Mon-Fri (0-4) 09:00 - 17:00, lunch 13:00 - 14:00
+    for doc in [doc1, doc2]:
+        for day in range(5):
+            wh = WorkingHours(
+                doctor_id=doc.id,
+                day_of_week=day,
+                start_time=time(9, 0),
+                end_time=time(17, 0),
+                break_start=time(13, 0),
+                break_end=time(14, 0),
+            )
+            db.add(wh)
+
+    # Seed 2 test patients
+    pat1 = Patient(name="John Kamau", email="john.kamau@test.com", phone="+254712345678")
+    pat2 = Patient(name="Faith Achieng", email="faith.achieng@test.com", phone="+254798765432")
+    db.add_all([pat1, pat2])
+    db.commit()
+
+
+@pytest.fixture(scope="function")
+def db_session():
+    """Create a fresh database for each test function."""
+    Base.metadata.create_all(bind=test_engine)
+    db = TestingSessionLocal()
+    seed_test_data(db)
+    try:
+        yield db
+    finally:
+        db.close()
+        Base.metadata.drop_all(bind=test_engine)
+
+
+@pytest.fixture(scope="function")
+def client(db_session):
+    """Override FastAPI dependency to use test database session."""
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
