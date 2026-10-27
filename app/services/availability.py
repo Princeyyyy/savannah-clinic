@@ -1,6 +1,6 @@
 from datetime import datetime, date, time, timedelta, timezone
 from typing import List, Dict, Any, Tuple
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.core.config import settings
 from app.core.exceptions import ResourceNotFoundException, InvalidBookingException
 from app.models import Doctor, WorkingHours, Appointment, AppointmentStatus
@@ -77,7 +77,9 @@ def get_doctor_schedule_slots(
     start_of_day = datetime.combine(query_date, time.min)
     end_of_day = datetime.combine(query_date, time.max)
 
-    booked_appointments = db.query(Appointment).filter(
+    booked_appointments = db.query(Appointment).options(
+        joinedload(Appointment.patient)
+    ).filter(
         Appointment.doctor_id == doctor_id,
         Appointment.status == AppointmentStatus.BOOKED.value,
         Appointment.start_time >= start_of_day,

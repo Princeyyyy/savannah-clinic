@@ -64,3 +64,52 @@ def test_bonus_patient_upcoming_appointments_sorted(client):
     # Must be sorted chronologically: 09:30 before 11:00
     assert "T09:30:00" in appointments[0]["start_time"]
     assert "T11:00:00" in appointments[1]["start_time"]
+    assert appointments[0]["doctor_name"] is not None
+    assert appointments[0]["patient_name"] == "John Kamau"
+
+    # With upcoming_only=False, cancelled appointment is included
+    all_res = client.get("/api/v1/patients/1/appointments?upcoming_only=false")
+    assert all_res.status_code == 200
+    assert len(all_res.json()) == 3
+
+
+def test_doctor_availability_omitted_date_defaults_gracefully(client):
+    """
+    When the date query parameter is omitted in Swagger docs or API calls,
+    the endpoint defaults to today (or next weekday) rather than failing with 422.
+    """
+    res = client.get("/api/v1/doctors/1/availability")
+    assert res.status_code == 200
+    data = res.json()
+    assert "date" in data
+    assert data["doctor_id"] == 1
+    assert "available_slots" in data
+    assert "all_slots" in data
+
+
+def test_appointment_details_include_doctor_and_patient_names(client):
+    """
+    Ensure GET /appointments and GET /appointments/{id} populate
+    doctor_name and patient_name rather than returning null.
+    """
+    future_mon = get_next_weekday(date.today(), target_weekday=0)
+    slot = f"{future_mon.isoformat()}T14:00:00"
+
+    book_res = client.post(
+        "/api/v1/appointments",
+        json={"doctor_id": 1, "patient_id": 2, "start_time": slot}
+    )
+    assert book_res.status_code == 201
+    appt_id = book_res.json()["id"]
+
+    get_one = client.get(f"/api/v1/appointments/{appt_id}")
+    assert get_one.status_code == 200
+    assert get_one.json()["doctor_name"] == "Dr. Joyce Moraa"
+    assert get_one.json()["patient_name"] == "Faith Achieng"
+
+    get_list = client.get("/api/v1/appointments")
+    assert get_list.status_code == 200
+    matching = [a for a in get_list.json() if a["id"] == appt_id]
+    assert len(matching) == 1
+    assert matching[0]["doctor_name"] == "Dr. Joyce Moraa"
+    assert matching[0]["patient_name"] == "Faith Achieng"

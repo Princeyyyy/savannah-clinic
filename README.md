@@ -129,14 +129,17 @@ The API adheres to strict REST conventions, returning standard HTTP status codes
 | Method | Route | Description | Expected Status Codes |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/` | Web UI Clinic Booking Dashboard | `200 OK` |
-| `GET` | `/docs` | Interactive Swagger API Explorer | `200 OK` |
+| `GET` | `/docs` | Interactive Swagger API Explorer (with complete example payloads) | `200 OK` |
 | `GET` | `/health` | Health probe (verifies database connectivity) | `200 OK` / `503 Unavailable` |
 | `GET` | `/api/v1/doctors` | List all 5 doctors and working hours | `200 OK` |
-| `GET` | `/api/v1/doctors/{id}/availability?date=YYYY-MM-DD` | Return all available 30-min slots on a date | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `GET` | `/api/v1/doctors/{id}/availability?date=YYYY-MM-DD` | Return all available 30-min slots on a date (defaults to today/next clinic day) | `200 OK`, `400 Bad Request`, `404 Not Found` |
 | `POST` | `/api/v1/appointments` | Book an appointment slot | `201 Created`, `400 Bad Request`, `409 Conflict` |
+| `GET` | `/api/v1/appointments` | List all appointments with doctor and patient names | `200 OK` |
+| `GET` | `/api/v1/appointments/{id}` | Retrieve single appointment details | `200 OK`, `404 Not Found` |
 | `PATCH` | `/api/v1/appointments/{id}/cancel` | Cancel an appointment with a reason | `200 OK`, `400 Bad Request`, `404 Not Found` |
 | `PATCH` | `/api/v1/appointments/{id}/reschedule` | Move appointment to a new slot | `200 OK`, `400 Bad Request`, `409 Conflict` |
-| `GET` | `/api/v1/patients` | List clinic patients | `200 OK` |
+| `GET` | `/api/v1/patients` | List registered clinic patients | `200 OK` |
+| `POST` | `/api/v1/patients` | Register a new patient | `201 Created`, `409 Conflict` |
 | `GET` | `/api/v1/patients/{id}/appointments` | Patient's upcoming appointments sorted chronologically | `200 OK`, `404 Not Found` |
 
 ### Advance Scheduling & Patient Appointment Features
@@ -234,7 +237,7 @@ Execute the entire test suite including the concurrency stress test:
 ```bash
 pytest -v
 ```
-*All 19 tests will pass in ~0.25 seconds using the isolated in-memory test database fixture.*
+*All 23 automated tests will pass in ~0.40 seconds using the isolated test database fixture.*
 
 ---
 

@@ -51,3 +51,6 @@ test_clinic.db
 .vscode/
 .idea/
 .DS_Store
+.agents/
+skills-lock.json
+AGENTS.md
