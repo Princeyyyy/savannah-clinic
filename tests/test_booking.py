@@ -131,3 +131,33 @@ def test_root_path_aliases_compatibility(client):
     avail_res = client.get(f"/doctors/1/availability?date={future_tue.isoformat()}")
     assert avail_res.status_code == 200
     assert avail_res.json()["doctor_id"] == 1
+
+
+def test_book_appointment_minutes_before_start_time_allowed(client):
+    """
+    A 12:00 PM session attempted at 11:59 AM (1 minute in advance) must succeed.
+    No 1-hour cutoff lock exists. Only slots whose start time has already elapsed are rejected.
+    """
+    from datetime import datetime, time
+    from tests.conftest import TestingSessionLocal
+    from app.services.booking import book_appointment
+
+    db = TestingSessionLocal()
+    try:
+      future_day = get_next_weekday(date.today(), target_weekday=1)
+      simulated_now = datetime.combine(future_day, time(11, 59, 0))
+      target_slot = datetime.combine(future_day, time(12, 0, 0))
+
+      appt = book_appointment(
+          db=db,
+          doctor_id=1,
+          patient_id=1,
+          start_time=target_slot,
+          current_time=simulated_now,
+      )
+      assert appt.id is not None
+      assert appt.start_time == target_slot
+      assert appt.status == "BOOKED"
+    finally:
+      db.close()
+

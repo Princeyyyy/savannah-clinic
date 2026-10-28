@@ -22,10 +22,9 @@ def validate_booking_time(
     """
     Validates that a requested slot start_time:
     1. Aligns with 30-minute boundaries.
-    2. Is not in the past.
-    3. Respects the advance booking cutoff (1 hour).
-    4. Falls within the doctor's working hours and outside lunch breaks.
-    5. Is not already taken by another active booking.
+    2. Is not in the past (bookable right up to start time).
+    3. Falls within the doctor's working hours and outside lunch breaks.
+    4. Is not already taken by another active booking.
     Returns normalized naive datetime in clinic time.
     """
     # Normalize start_time to naive clinic time if timezone is present
@@ -49,17 +48,9 @@ def validate_booking_time(
         except Exception:
             current_time = current_time.astimezone(timezone.utc).replace(tzinfo=None)
 
-    # Validate not in the past
+    # Validate not in the past: open future slots are bookable right up until their scheduled start time
     if start_time < current_time:
         raise InvalidBookingException("Cannot book an appointment slot in the past.")
-
-    # Check advance booking cutoff if configured
-    if settings.MIN_ADVANCE_BOOKING_HOURS > 0:
-        advance_cutoff = current_time + timedelta(hours=settings.MIN_ADVANCE_BOOKING_HOURS)
-        if start_time < advance_cutoff:
-            raise InvalidBookingException(
-                f"Bookings must be made at least {settings.MIN_ADVANCE_BOOKING_HOURS} hour(s) in advance."
-            )
 
     # Check doctor working hours
     slot_date = start_time.date()

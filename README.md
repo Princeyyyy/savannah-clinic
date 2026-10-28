@@ -237,7 +237,7 @@ Execute the entire test suite including the concurrency stress test:
 ```bash
 pytest -v
 ```
-*All 23 automated tests will pass in ~0.40 seconds using the isolated test database fixture.*
+*All 24 automated tests will pass in ~0.40 seconds using the isolated test database fixture.*
 
 ---
 
