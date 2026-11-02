@@ -52,6 +52,35 @@ app.add_middleware(
 )
 
 
+# ASGI Middleware to support HTTP HEAD requests across all GET endpoints (RFC 7231)
+# Resolves 405 Method Not Allowed from uptime checkers (UptimeRobot, BetterStack, Pingdom) and cloud health probes
+class HeadMethodMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http" and scope.get("method") == "HEAD":
+            scope = dict(scope)
+            scope["method"] = "GET"
+
+            async def wrapped_send(message):
+                if message.get("type") == "http.response.body":
+                    await send({
+                        "type": "http.response.body",
+                        "body": b"",
+                        "more_body": False
+                    })
+                else:
+                    await send(message)
+
+            await self.app(scope, receive, wrapped_send)
+        else:
+            await self.app(scope, receive, send)
+
+
+app.add_middleware(HeadMethodMiddleware)
+
+
 # Exception handler for Domain Exceptions
 @app.exception_handler(DomainException)
 async def domain_exception_handler(request: Request, exc: DomainException):

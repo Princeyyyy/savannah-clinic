@@ -113,3 +113,23 @@ def test_appointment_details_include_doctor_and_patient_names(client):
     assert len(matching) == 1
     assert matching[0]["doctor_name"] == "Dr. Joyce Moraa"
     assert matching[0]["patient_name"] == "Faith Achieng"
+
+
+def test_head_requests_handled_cleanly_for_uptime_monitors(client):
+    """
+    Ensure HTTP HEAD requests to /, /health, and REST routes return 200 OK
+    with 0 body bytes and proper headers (RFC 7231).
+    Prevents 405 Method Not Allowed errors from UptimeRobot, Pingdom, and cloud health probes.
+    """
+    res_root = client.head("/")
+    assert res_root.status_code == 200
+    assert len(res_root.text) == 0
+    assert "content-type" in res_root.headers
+
+    res_health = client.head("/health")
+    assert res_health.status_code == 200
+    assert len(res_health.text) == 0
+
+    res_docs = client.head("/api/v1/doctors")
+    assert res_docs.status_code == 200
+    assert len(res_docs.text) == 0
